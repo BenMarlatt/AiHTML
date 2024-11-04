@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 )
@@ -37,21 +38,25 @@ func getAIResponse(messages []OllamaMessage) string {
 	url := "http://localhost:11434/api/chat"
 
 	requestBody, err := json.Marshal(OllamaRequest{
-		Model:     "mannix/llama3.1-8b-lexi:tools-q8_0",
+		Model:     "mannix/llama3.1-8b-lexifsfsdfsdf:tools-q8_0",
 		Stream:    false,
 		Messages:  messages,
 		KeepAlive: 10000,
 	})
 
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(requestBody))
+	fmt.Println("Response:", resp)
 	if err != nil {
-		return ""
+		return "<h1>Error: " + err.Error() + "</h1>"
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return ""
+	var errorResp struct {
+		Error string `json:"error"`
+	}
+	if err := json.Unmarshal(body, &errorResp); err == nil && errorResp.Error != "" {
+		return "<h1>Error: " + errorResp.Error + "</h1>"
 	}
 	var ollamaResp OllamaResponse
 	err = json.Unmarshal(body, &ollamaResp)
